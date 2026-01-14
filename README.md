@@ -264,3 +264,148 @@ Claude Code:
 - nie może upraszczać,
 - musi pytać, jeśli coś jest niejasne,
 - implementuje punkt po punkcie.
+
+---
+
+## 18. Instalacja i Konfiguracja
+
+### Wymagania systemowe
+- Windows 11
+- Python 3.11+
+- Tesseract OCR
+- Poppler (PDF rendering)
+
+### Instalacja zależności
+
+```bash
+# Zainstaluj Python dependencies
+pip install -r requirements.txt
+
+# Zainstaluj Tesseract OCR
+# Pobierz z: https://github.com/UB-Mannheim/tesseract/wiki
+# Domyślna ścieżka: C:\Program Files\Tesseract-OCR\tesseract.exe
+
+# Zainstaluj Poppler
+# Pobierz z: https://github.com/oschwartz10612/poppler-windows/releases
+# Domyślna ścieżka: C:\Program Files\poppler\bin
+```
+
+### Konfiguracja
+
+1. Skopiuj `.env.example` do `.env`:
+   ```bash
+   copy .env.example .env
+   ```
+
+2. Wypełnij wartości w `.env`:
+   - `AZURE_TENANT_ID`, `AZURE_CLIENT_ID`, `AZURE_CLIENT_SECRET` - dane Azure AD App
+   - `MAILBOX_USER_ID` - adres email skrzynki do przetwarzania
+   - `SHAREPOINT_SITE_ID`, `SHAREPOINT_DRIVE_ID`, `SHAREPOINT_FOLDER_PATH` - lokalizacja SharePoint
+   - `TESSERACT_PATH`, `POPPLER_PATH` - ścieżki do narzędzi OCR
+   - `ANTHROPIC_API_KEY` - opcjonalnie, klucz Claude API
+
+### Azure AD App Setup
+
+Aplikacja wymaga następujących uprawnień Microsoft Graph (Application permissions):
+- `Mail.Read` - odczyt emaili
+- `Mail.ReadWrite` - oznaczanie jako przeczytane
+- `Sites.ReadWrite.All` - upload do SharePoint
+
+---
+
+## 19. Użycie
+
+### Tryb manualny (pojedyncza data)
+
+```bash
+# Przetwórz emaile z konkretnej daty
+python -m src.main --date 2024-01-15
+
+# Tryb dry-run (bez mark-as-read i upload)
+python -m src.main --date 2024-01-15 --dry-run
+```
+
+### Tryb manualny (zakres dat)
+
+```bash
+# Przetwórz emaile z zakresu dat
+python -m src.main --date-from 2024-01-15 --date-to 2024-01-20
+```
+
+### Tryb automatyczny (ostatnie 24h)
+
+```bash
+# Przetwórz emaile z ostatnich 24 godzin
+python -m src.main --auto
+```
+
+### Windows Task Scheduler
+
+1. Otwórz Task Scheduler
+2. Create Basic Task:
+   - Name: "Price Discrepancy Processor"
+   - Trigger: Daily, 8:00 AM
+   - Action: Start a program
+   - Program: `C:\path\to\scripts\run_scheduled.bat`
+3. Configure settings:
+   - Run whether user is logged on or not
+   - Run with highest privileges
+
+---
+
+## 20. Testy
+
+```bash
+# Uruchom wszystkie testy
+pytest
+
+# Uruchom konkretny test
+pytest tests/test_validators.py
+
+# Uruchom z coverage
+pytest --cov=src tests/
+```
+
+---
+
+## 21. Struktura projektu
+
+```
+price-discrepancy-agent/
+├── src/
+│   ├── main.py                    # CLI entrypoint
+│   ├── config.py                  # Konfiguracja
+│   ├── core/
+│   │   ├── models.py              # Modele danych
+│   │   ├── pipeline.py            # Główny pipeline
+│   │   ├── extractors.py          # Ekstrakcja danych
+│   │   ├── validators.py          # Walidatory
+│   │   ├── normalize.py           # Normalizacja
+│   │   └── priority.py            # Priority merge
+│   ├── integrations/
+│   │   ├── graph/
+│   │   │   ├── auth.py            # MSAL auth
+│   │   │   ├── mail.py            # Outlook operations
+│   │   │   ├── queries.py         # Query builders
+│   │   │   └── sharepoint.py      # SharePoint upload
+│   │   ├── ocr/
+│   │   │   ├── tesseract.py       # Tesseract wrapper
+│   │   │   ├── pdf_render.py      # PDF to images
+│   │   │   ├── image_extract.py   # Image extraction
+│   │   │   └── ocr_pipeline.py    # OCR orchestration
+│   │   ├── excel/
+│   │   │   ├── parser.py          # XLSX parser
+│   │   │   └── writer.py          # Excel writer
+│   │   ├── logging/
+│   │   │   └── run_log.py         # Log writer
+│   │   └── anthropic/
+│   │       └── client.py          # Claude fallback (optional)
+│   └── utils/
+│       └── text.py                # Text utilities (regex)
+├── tests/                         # Unit tests
+├── scripts/                       # Bat scripts
+├── logs/                          # Scheduled run logs
+├── .env.example                   # Example config
+├── requirements.txt               # Python dependencies
+└── README.md                      # This file
+```
