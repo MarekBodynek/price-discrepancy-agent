@@ -1,5 +1,27 @@
 # Price Discrepancy Email Processor (CLI)
 
+## 🚀 Quick Start & Documentation
+
+**Gotowy do wdrożenia?** Zobacz przewodniki krok po kroku:
+
+📘 **[Azure AD Setup Guide](docs/AZURE_AD_SETUP.md)** - Konfiguracja Microsoft Graph API
+🔧 **[OCR Tools Setup Guide](docs/OCR_TOOLS_SETUP.md)** - Instalacja Tesseract i Poppler
+📚 **[Pełna dokumentacja](docs/README.md)** - Architektura, usage, troubleshooting
+
+**Szybki test:**
+```bash
+# Instalacja zależności
+pip install -r requirements.txt
+
+# Testy jednostkowe (39 testów, coverage 44%)
+python3 -m pytest tests/ -v
+
+# Dry-run (nie oznacza emaili, nie uploaduje)
+python3 -m src.main --auto --dry-run
+```
+
+---
+
 ## 1. Cel projektu
 
 Celem projektu jest stworzenie **stabilnego, deterministycznego narzędzia CLI**, które automatycznie przetwarza **nieprzeczytane e-maile Outlook** dotyczące rozbieżności cenowych zgłaszanych przez sklepy, ekstraktuje z nich dane w sposób audytowalny i generuje:
