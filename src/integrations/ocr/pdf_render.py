@@ -3,6 +3,7 @@ PDF rendering to images using Poppler (pdftoppm).
 """
 
 import subprocess
+import sys
 import tempfile
 from pathlib import Path
 from typing import Optional
@@ -26,7 +27,9 @@ class PDFRenderer:
             config: Application configuration.
         """
         self.config = config
-        self.pdftoppm_path = Path(config.poppler_path) / "pdftoppm.exe"
+        # Cross-platform: use .exe on Windows, no extension on macOS/Linux
+        binary_name = "pdftoppm.exe" if sys.platform == "win32" else "pdftoppm"
+        self.pdftoppm_path = Path(config.poppler_path) / binary_name
 
         if not self.pdftoppm_path.exists():
             raise PDFRenderError(f"pdftoppm not found at {self.pdftoppm_path}")
