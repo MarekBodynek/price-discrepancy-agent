@@ -33,6 +33,65 @@ STORE_PATTERN = re.compile(r'(?:store|unit|enota|trgovina)\s*:?\s*([A-Z0-9\-]+)'
 SUPPLIER_PATTERN = re.compile(r'(?:supplier|dobavitelj|prodajalec)\s*:?\s*([A-Za-z0-9\s\-\.]+?)(?:\n|$)', re.IGNORECASE)
 
 
+def is_valid_ean(code: str) -> bool:
+    """
+    Validate an EAN code using checksum verification and heuristic filters.
+
+    Args:
+        code: Digit string to validate.
+
+    Returns:
+        True if the code passes validation.
+    """
+    if not code.isdigit():
+        return False
+
+    if len(code) not in (8, 13):
+        return False
+
+    # Filter out date-like 8-digit numbers: YYYYMMDD
+    if len(code) == 8:
+        year = int(code[:4])
+        month = int(code[4:6])
+        day = int(code[6:8])
+        if 1990 <= year <= 2099 and 1 <= month <= 12 and 1 <= day <= 31:
+            return False
+
+    # Filter out date-like 8-digit numbers: DDMMYYYY
+    if len(code) == 8:
+        day2 = int(code[:2])
+        month2 = int(code[2:4])
+        year2 = int(code[4:8])
+        if 1 <= day2 <= 31 and 1 <= month2 <= 12 and 1990 <= year2 <= 2099:
+            return False
+
+    # Filter out all-same-digit numbers (00000000, 11111111, etc.)
+    if len(set(code)) == 1:
+        return False
+
+    # EAN-13 checksum validation
+    if len(code) == 13:
+        total = 0
+        for i, digit in enumerate(code[:12]):
+            weight = 1 if i % 2 == 0 else 3
+            total += int(digit) * weight
+        check = (10 - (total % 10)) % 10
+        if check != int(code[12]):
+            return False
+
+    # EAN-8 checksum validation
+    if len(code) == 8:
+        total = 0
+        for i, digit in enumerate(code[:7]):
+            weight = 3 if i % 2 == 0 else 1
+            total += int(digit) * weight
+        check = (10 - (total % 10)) % 10
+        if check != int(code[7]):
+            return False
+
+    return True
+
+
 def extract_eans(text: str) -> list[str]:
     """
     Extract EAN codes from text.
@@ -44,7 +103,9 @@ def extract_eans(text: str) -> list[str]:
         List of unique EAN codes.
     """
     matches = EAN_PATTERN.findall(text)
-    return list(set(matches))
+    # Filter with checksum validation and heuristic filters
+    valid = [m for m in matches if is_valid_ean(m)]
+    return list(set(valid))
 
 
 def extract_prices(text: str) -> list[float]:

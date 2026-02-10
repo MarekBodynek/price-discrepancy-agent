@@ -18,6 +18,7 @@ def mock_config():
     config.ocr_languages = ["eng"]
     config.tesseract_path = "/fake/path"
     config.poppler_path = "/fake/path"
+    config.anthropic_api_key = None
     return config
 
 
@@ -34,7 +35,7 @@ def test_extract_from_body_with_ean(mock_ocr_pipeline, mock_config):
         sender_address="test@example.com",
         subject="Test",
         received_datetime=datetime.now(),
-        body_text="Product EAN: 12345678\nPrice: 10.50 EUR",
+        body_text="Product EAN: 12345670\nPrice: 10.50 EUR",
         body_html=None,
     )
 
@@ -43,7 +44,7 @@ def test_extract_from_body_with_ean(mock_ocr_pipeline, mock_config):
 
     assert result is not None
     assert result.source == DataSource.BODY
-    assert "12345678" in result.eans
+    assert "12345670" in result.eans
 
 
 @patch("src.core.extractors.OCRPipeline")
@@ -84,7 +85,7 @@ def test_extract_from_body_with_prices(mock_ocr_pipeline, mock_config):
         sender_address="test@example.com",
         subject="Test",
         received_datetime=datetime.now(),
-        body_text="EAN 12345678 Price: 10.50 EUR\nEAN 87654321 Price: 20.00 EUR",
+        body_text="EAN 12345670 Price: 10.50 EUR\nEAN 87654325 Price: 20.00 EUR",
         body_html=None,
     )
 
@@ -133,7 +134,7 @@ def test_extract_from_body_html_stripping(mock_ocr_pipeline, mock_config):
         subject="Test",
         received_datetime=datetime.now(),
         body_text=None,
-        body_html="<p>EAN: <b>12345678</b></p><p>Delivery: 2024-01-15</p>",
+        body_html="<p>EAN: <b>12345670</b></p><p>Delivery: 2024-01-15</p>",
     )
 
     extractor = DataExtractor(mock_config)
@@ -141,7 +142,7 @@ def test_extract_from_body_html_stripping(mock_ocr_pipeline, mock_config):
 
     assert result is not None
     # HTML should be stripped, EAN should still be found
-    assert "12345678" in result.eans
+    assert "12345670" in result.eans
 
 
 @patch("src.core.extractors.OCRPipeline")
@@ -155,7 +156,7 @@ def test_extract_from_excel_attachment(mock_parser_class, mock_ocr_pipeline, moc
 
     # Mock ExcelParser
     mock_parser = Mock()
-    mock_parser.extract_text_from_xlsx.return_value = "EAN: 12345678\nDelivery Date: 2024-01-15"
+    mock_parser.extract_text_from_xlsx.return_value = "EAN: 12345670\nDelivery Date: 2024-01-15"
     mock_parser_class.return_value = mock_parser
 
     email = EmailItem(
@@ -180,4 +181,4 @@ def test_extract_from_excel_attachment(mock_parser_class, mock_ocr_pipeline, moc
 
     assert len(results) >= 1
     assert results[0].source == DataSource.ATTACHMENT
-    assert "12345678" in results[0].eans
+    assert "12345670" in results[0].eans

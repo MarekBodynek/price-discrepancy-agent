@@ -37,7 +37,7 @@ def sample_email():
         sender_address="test@example.com",
         subject="Price Discrepancy",
         received_datetime=datetime(2024, 1, 15, 10, 0, 0),
-        body_text="Delivery Date: 2024-01-15\nEAN: 12345678\nPrice: 10.50 EUR",
+        body_text="Delivery Date: 2024-01-15\nEAN: 12345670\nPrice: 10.50 EUR",
         body_html=None,
         attachments=[],
         inline_images=[],
@@ -79,7 +79,7 @@ def test_process_email_without_dates(mock_ocr_pipeline, mock_config):
         sender_address="test@example.com",
         subject="Test",
         received_datetime=datetime.now(),
-        body_text="EAN: 12345678\nPrice: 10.50 EUR",  # No dates!
+        body_text="EAN: 12345670\nPrice: 10.50 EUR",  # No dates!
         body_html=None,
         attachments=[],
         inline_images=[],
@@ -142,11 +142,11 @@ def test_generate_case_rows_single_ean():
     merged_data = ExtractedData(
         source=DataSource.OCR,
         source_details="OCR from images",
-        eans=["12345678"],
+        eans=["12345670"],
         delivery_date=date(2024, 1, 15),
         supplier_name="Test Supplier",
-        supplier_prices={"12345678": 10.50},
-        stores={"12345678": "Store-A"},
+        supplier_prices={"12345670": 10.50},
+        stores={"12345670": "Store-A"},
     )
 
     conflicts = ["OCR price vs Excel price"]
@@ -154,7 +154,7 @@ def test_generate_case_rows_single_ean():
     cases = generate_case_rows(email, merged_data, conflicts)
 
     assert len(cases) == 1
-    assert cases[0].ean_code == "12345678"
+    assert cases[0].ean_code == "12345670"
     assert cases[0].delivery_date == date(2024, 1, 15)
     assert cases[0].supplier_price == 10.50
     assert cases[0].unit_store == "STORE-A"  # Normalized to uppercase
@@ -177,17 +177,17 @@ def test_generate_case_rows_multiple_eans():
     merged_data = ExtractedData(
         source=DataSource.BODY,
         source_details="Email body",
-        eans=["12345678", "87654321"],
+        eans=["12345670", "87654325"],
         order_creation_date=date(2024, 1, 10),
-        supplier_prices={"12345678": 10.50, "87654321": 20.00},
-        stores={"12345678": "Store-A", "87654321": "Store-B"},
+        supplier_prices={"12345670": 10.50, "87654325": 20.00},
+        stores={"12345670": "Store-A", "87654325": "Store-B"},
     )
 
     cases = generate_case_rows(email, merged_data, [])
 
     assert len(cases) == 2
-    assert cases[0].ean_code == "12345678"
-    assert cases[1].ean_code == "87654321"
+    assert cases[0].ean_code == "12345670"
+    assert cases[1].ean_code == "87654325"
     assert cases[0].order_creation_date == date(2024, 1, 10)
     assert cases[1].order_creation_date == date(2024, 1, 10)  # Shared date
 

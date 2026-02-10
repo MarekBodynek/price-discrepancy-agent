@@ -10,15 +10,16 @@ from src.utils.text import (
     extract_invoice_numbers,
     extract_prices,
     find_date_by_keyword,
+    is_valid_ean,
 )
 
 
 def test_extract_eans():
-    """Test EAN extraction."""
-    text = "Products: 12345678, 1234567890123"
+    """Test EAN extraction with valid checksum EANs."""
+    text = "Products: 12345670, 1234567890128"
     eans = extract_eans(text)
-    assert "12345678" in eans
-    assert "1234567890123" in eans
+    assert "12345670" in eans
+    assert "1234567890128" in eans
 
 
 def test_extract_prices():
@@ -68,3 +69,48 @@ def test_find_date_by_keyword():
     text3 = "No date here"
     no_date = find_date_by_keyword(text3, "delivery")
     assert no_date is None
+
+
+def test_is_valid_ean_checksum():
+    """Test EAN checksum validation."""
+    # Valid EAN-8
+    assert is_valid_ean("12345670") is True
+    # Valid EAN-13
+    assert is_valid_ean("1234567890128") is True
+    # Invalid checksum EAN-8
+    assert is_valid_ean("12345678") is False
+    # Invalid checksum EAN-13
+    assert is_valid_ean("1234567890123") is False
+    # Wrong length
+    assert is_valid_ean("123") is False
+    assert is_valid_ean("12345678901234") is False
+    # Non-digits
+    assert is_valid_ean("1234abcd") is False
+
+
+def test_is_valid_ean_filters_dates():
+    """Test that date-like numbers are filtered out."""
+    # YYYYMMDD format
+    assert is_valid_ean("20240115") is False
+    assert is_valid_ean("20260210") is False
+    # DDMMYYYY format
+    assert is_valid_ean("15012024") is False
+    assert is_valid_ean("10022026") is False
+
+
+def test_is_valid_ean_filters_obvious_non_eans():
+    """Test that obvious non-EANs are filtered."""
+    # All same digits
+    assert is_valid_ean("00000000") is False
+    assert is_valid_ean("11111111") is False
+    assert is_valid_ean("9999999999999") is False
+
+
+def test_extract_eans_filters_invalid():
+    """Test that extract_eans filters out invalid EANs."""
+    # Mix of valid and invalid: 12345670 is valid, 20240115 is a date, 99999999 has bad checksum
+    text = "Code: 12345670, date: 20240115, bad: 99999999"
+    eans = extract_eans(text)
+    assert "12345670" in eans
+    assert "20240115" not in eans  # date-like
+    assert "99999999" not in eans  # all same digits
