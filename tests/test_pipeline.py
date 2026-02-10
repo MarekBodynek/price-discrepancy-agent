@@ -193,7 +193,7 @@ def test_generate_case_rows_multiple_eans():
 
 
 def test_generate_case_rows_no_eans():
-    """Test generating case rows when no EANs found."""
+    """Test generating case rows when no EANs found and no prices — safety net skips."""
     email = EmailItem(
         message_id="test",
         sender_address="test@example.com",
@@ -212,10 +212,34 @@ def test_generate_case_rows_no_eans():
 
     cases = generate_case_rows(email, merged_data, [])
 
-    # Should create one row with normalized UNKNOWN EAN (becomes empty string after normalization)
+    # Safety net: UNKNOWN EAN with no prices is skipped
+    assert len(cases) == 0
+
+
+def test_generate_case_rows_no_eans_with_price():
+    """Test that UNKNOWN EAN row is kept when it has a price."""
+    email = EmailItem(
+        message_id="test",
+        sender_address="test@example.com",
+        subject="Test",
+        received_datetime=datetime.now(),
+        body_text="",
+        body_html=None,
+    )
+
+    merged_data = ExtractedData(
+        source=DataSource.BODY,
+        source_details="Email body",
+        eans=[],  # No EANs
+        delivery_date=date(2024, 1, 15),
+        supplier_prices={"UNKNOWN": 10.50},
+    )
+
+    cases = generate_case_rows(email, merged_data, [])
+
+    # UNKNOWN with a price should be kept
     assert len(cases) == 1
-    assert cases[0].ean_code == ""  # "UNKNOWN" normalized to "" (digits only)
-    assert cases[0].delivery_date == date(2024, 1, 15)
+    assert cases[0].supplier_price == 10.50
 
 
 def test_dry_run_mode(mock_config, sample_email):

@@ -125,6 +125,13 @@ def generate_case_rows(
     eans = merged_data.eans if merged_data.eans else ["UNKNOWN"]
 
     for ean in eans:
+        # Safety net: skip rows where EAN is UNKNOWN and no prices exist
+        if ean == "UNKNOWN":
+            has_supplier_price = merged_data.supplier_prices.get(ean) is not None
+            has_internal_price = merged_data.internal_prices.get(ean) is not None
+            if not has_supplier_price and not has_internal_price:
+                continue
+
         # Normalize data
         normalized_ean = Normalizers.normalize_ean(ean)
 
